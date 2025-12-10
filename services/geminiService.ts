@@ -159,10 +159,29 @@ RÉPONSE DE L'ÉLÈVE :
  *    (au cas où tu imports generateSpeech, même si ce n'est pas encore implémenté)
  */
 export const generateSpeech = async (text: string): Promise<string> => {
-  console.warn("generateSpeech n'est pas encore implémentée.");
-  // Pour l’instant on renvoie une string vide ou un pseudo-URL
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    console.warn("Synthèse vocale non supportée.");
+    return "";
+  }
+
+  if (!text || !text.trim()) {
+    console.warn("Texte vide pour la synthèse vocale.");
+    return "";
+  }
+
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "fr-FR";
+  utterance.rate = 1;
+  utterance.pitch = 1;
+
+  window.speechSynthesis.speak(utterance);
+
+  // On n'a pas vraiment d'URL à renvoyer, donc on renvoie juste une chaîne vide
   return "";
 };
+
 
 // Feedback final pour l'élève
 export const generateFinalFeedback = async (
