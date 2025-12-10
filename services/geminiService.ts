@@ -3,9 +3,7 @@ import { StoryData, EvaluationResult, Question, UserScore } from "../types";
 
 const getAI = () =>
   new GoogleGenAI({
-    apiKey:
-      (import.meta as any).env?.VITE_GEMINI_API_KEY ||
-      "AIzaSyD0GEmyC1TqMPeckyw2wDpLkNfleh_SQoA",
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY,
   });
 
 
