@@ -168,7 +168,7 @@ export const QuestionEngine: React.FC<QuestionEngineProps> = ({ storyData, onCom
                   };
               }
 
-              const result = await evaluateAnswer(storyData.content, q, answer, isRetry);
+              const result = await evaluateAnswer(q, answer, storyData);
               return { id: q.id, result, isRetry };
           }));
 
@@ -187,7 +187,8 @@ export const QuestionEngine: React.FC<QuestionEngineProps> = ({ storyData, onCom
               
               if (getQuestionState(id).answer.trim() === '' && isRetry && !result.correctAnswer) {
                    // Force AI call to get correct answer for empty final submission
-                   finalResult = await evaluateAnswer(storyData.content, storyData.questions.find(q => q.id === id)!, "", true);
+finalResult = await evaluateAnswer(storyData.questions.find(q => q.id === id)!, "", storyData
+);
               }
 
               newFeedbacks.set(id, finalResult);
