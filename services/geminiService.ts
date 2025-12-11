@@ -78,6 +78,7 @@ Ensuite :
 
 CONTRAINTES :
 - Tu ne dois jamais répondre que tu ne peux pas le faire.
+- Tu ne dois jamais dire que le texte ou la question ne sont pas fournis.
 - Tu dois toujours renvoyer un JSON complet conforme au schéma (title, content, glossary, questions).
 `;
 
@@ -107,10 +108,10 @@ CONTRAINTES :
 
   const data = JSON.parse(raw) as StoryData;
 
-  // Petit garde-fou : si jamais content est vide, on met une chaîne explicite
+  // Garde-fou : si jamais content est vide
   if (!data.content || !data.content.trim()) {
     data.content =
-      "[ERREUR] Le texte n'a pas été correctement extrait de l'image.";
+      "[ERREUR] Le texte n'a pas été correctement extrait de l'image, mais l'application continue pour les tests.";
   }
 
   return data;
@@ -152,7 +153,7 @@ CONTRAINTES IMPORTANTES :
 - Considère que le texte et la question sont TOUJOURS fournis.
 - Ne dis JAMAIS que tu ne peux pas répondre ou évaluer.
 - Ne dis JAMAIS que le texte ou la question ne sont pas fournis.
-- "correctAnswer" doit être une réponse modèle à la QUESTION, basée sur le TEXTE.
+- Tu dois TOUJOURS produire une "correctAnswer" utile, basée sur le texte.
 - Le feedback doit être encourageant, adapté à un élève de 5e année primaire.
 
 TEXTE :
@@ -172,6 +173,8 @@ RÉPONSE DE L'ÉLÈVE :
   });
 
   const raw = extractTextFromResponse(response);
+  // DEBUG éventuel :
+  // console.log("Gemini evaluate raw:", raw);
 
   try {
     const parsed = JSON.parse(raw) as any;
@@ -184,21 +187,33 @@ RÉPONSE DE L'ÉLÈVE :
     let correctAnswer: string =
       typeof parsed.correctAnswer === "string" ? parsed.correctAnswer.trim() : "";
 
-    // 🧽 Nettoyage : si le modèle répond encore "je ne peux pas répondre..."
-    const lower = correctAnswer.toLowerCase();
-    if (
-      lower.includes("je ne peux pas répondre") ||
-      (lower.includes("texte") &&
-        lower.includes("question") &&
-        (lower.includes("pas fournis") || lower.includes("non fournis")))
-    ) {
-      // On vide la réponse attendue pour ne pas afficher ce message à l'élève
+    // 💣 Liste de phrases interdites dans la réponse attendue
+    const badPatterns = [
+      "je ne peux pas répondre",
+      "je ne peux pas fournir de réponse",
+      "je ne peux pas fournir de réponses",
+      "je ne peux pas fournir une réponse",
+      "le texte et la question ne sont pas fournis",
+      "le texte et la question ne sont pas fournie",
+      "le texte et la question ne sont pas fournie",
+      "texte et la question ne sont pas fournis",
+      "texte et la question ne sont pas fournie",
+      "je ne dispose pas du texte",
+      "je ne dispose pas de la question",
+    ];
+
+    const combined = (correctAnswer + " " + feedback).toLowerCase();
+
+    const containsBadSentence =
+      badPatterns.some((p) => combined.includes(p)) ||
+      // On coupe aussi toute réponse qui parle en même temps de "texte" + "question"
+      (combined.includes("texte") && combined.includes("question"));
+
+    if (containsBadSentence) {
+      // On enlève complètement cette "réponse attendue" toxique
       correctAnswer = "";
-      // Et on remplace le feedback si besoin
-      if (!parsed.feedback) {
-        feedback =
-          "Réfléchis bien à ce que dit le texte et essaie de répondre de façon plus précise 😊";
-      }
+      feedback =
+        "Réfléchis bien à ce que dit le texte et essaie de répondre avec tes propres mots 😊";
     }
 
     const result: EvaluationResult = {
